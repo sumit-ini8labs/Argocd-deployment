@@ -15,7 +15,7 @@ spec:
       targetRevision: v1.12.9
       helm:
         valueFiles:
-          - $values/values/rook-ceph-operator.yaml
+          - $values/values/rook-ceph/operator-values.yaml
     - repoURL: https://github.com/sumit-ini8labs/Argocd-deployment.git
       targetRevision: main
       ref: values
@@ -46,7 +46,7 @@ spec:
       targetRevision: v1.12.9
       helm:
         valueFiles:
-          - $values/values/rook-ceph-cluster.yaml
+          - $values/values/rook-ceph/cluster-values.yaml
     - repoURL: https://github.com/sumit-ini8labs/Argocd-deployment.git
       targetRevision: main
       ref: values

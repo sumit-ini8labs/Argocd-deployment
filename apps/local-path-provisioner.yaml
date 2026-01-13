@@ -13,7 +13,7 @@ spec:
       path: deploy/chart/local-path-provisioner
       helm:
         valueFiles:
-          - $values/values/local-path-provisioner.yaml
+          - $values/values/local-path-provisioner/values.yaml
     - repoURL: https://github.com/sumit-ini8labs/Argocd-deployment.git
       targetRevision: main
       ref: values
