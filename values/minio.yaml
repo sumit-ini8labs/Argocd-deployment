@@ -1,0 +1,13 @@
+replicas: 1
+mode: standalone
+persistence:
+  enabled: true
+  size: 10Gi
+resources:
+  requests:
+    memory: 512Mi
+    cpu: 250m
+service:
+  type: NodePort
+consoleService:
+  type: NodePort

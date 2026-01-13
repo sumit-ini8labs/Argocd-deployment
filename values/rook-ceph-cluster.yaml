@@ -1,0 +1,27 @@
+operatorNamespace: rook-ceph
+cephClusterSpec:
+  mon:
+    count: 1
+  mgr:
+    count: 1
+  storage:
+    useAllNodes: true
+    useAllDevices: false
+    config:
+      osdsPerDevice: "1"
+    directories:
+    - path: /var/lib/rook
+cephBlockPools:
+  - name: ceph-blockpool
+    spec:
+      failureDomain: host
+      replicated:
+        size: 1
+    storageClass:
+      enabled: true
+      name: rook-ceph-block
+      isDefault: true
+      reclaimPolicy: Delete
+      allowVolumeExpansion: true
+cephFileSystems: []
+cephObjectStores: []

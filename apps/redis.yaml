@@ -7,25 +7,16 @@ metadata:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
-  source:
-    repoURL: https://charts.bitnami.com/bitnami
-    chart: redis
-    targetRevision: 18.0.0
-    helm:
-      values: |
-        architecture: standalone
-        auth:
-          enabled: false
-        master:
-          persistence:
-            enabled: true
-            size: 8Gi
-          resources:
-            requests:
-              memory: 256Mi
-              cpu: 100m
-          service:
-            type: NodePort
+  sources:
+    - repoURL: https://charts.bitnami.com/bitnami
+      chart: redis
+      targetRevision: 18.0.0
+      helm:
+        valueFiles:
+          - $values/values/redis.yaml
+    - repoURL: https://github.com/sumit-ini8labs/Argocd-deployment.git
+      targetRevision: main
+      ref: values
   destination:
     server: https://kubernetes.default.svc
     namespace: redis

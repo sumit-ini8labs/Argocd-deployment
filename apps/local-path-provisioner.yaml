@@ -1,25 +1,24 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: minio
+  name: local-path-provisioner
   namespace: argocd
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
-  sources:
-    - repoURL: https://charts.min.io/
-      chart: minio
-      targetRevision: 5.0.14
-      helm:
-        valueFiles:
-          - $values/values/minio.yaml
-    - repoURL: https://github.com/sumit-ini8labs/Argocd-deployment.git
-      targetRevision: main
-      ref: values
+  source:
+    repoURL: https://github.com/rancher/local-path-provisioner.git
+    targetRevision: v0.0.24
+    path: deploy/chart/local-path-provisioner
+    helm:
+      values: |
+        storageClass:
+          name: local-path
+          defaultClass: true
   destination:
     server: https://kubernetes.default.svc
-    namespace: minio
+    namespace: local-path-storage
   syncPolicy:
     automated:
       prune: true

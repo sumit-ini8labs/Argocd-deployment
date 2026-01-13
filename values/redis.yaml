@@ -1,0 +1,13 @@
+architecture: standalone
+auth:
+  enabled: false
+master:
+  persistence:
+    enabled: true
+    size: 8Gi
+  resources:
+    requests:
+      memory: 256Mi
+      cpu: 100m
+  service:
+    type: NodePort
