@@ -46,12 +46,16 @@ The repository at `https://github.com/sumit-ini8labs/Argocd-deployment` is struc
 │   ├── redis.yaml
 │   ├── rook-ceph.yaml
 │   └── local-path-provisioner.yaml
-└── values/               # Vendored Helm values
-    ├── minio.yaml
-    ├── redis.yaml
-    ├── rook-ceph-operator.yaml
-    ├── rook-ceph-cluster.yaml
-    └── local-path-provisioner.yaml
+└── values/               # Vendored Helm values (Organized by app)
+    ├── minio/
+    │   └── values.yaml
+    ├── redis/
+    │   └── values.yaml
+    ├── rook-ceph/
+    │   ├── operator-values.yaml
+    │   └── cluster-values.yaml
+    └── local-path-provisioner/
+        └── values.yaml
 ```
 
 ## 4. Advanced Configuration: Vendoring & Multiple Sources
