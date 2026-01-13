@@ -55,9 +55,10 @@ spec:
           storage:
             useAllNodes: true
             useAllDevices: false
-            deviceFilter: ""
             config:
               osdsPerDevice: "1"
+            directories:
+            - path: /var/lib/rook
         cephBlockPools:
           - name: ceph-blockpool
             spec:
