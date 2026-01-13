@@ -7,15 +7,16 @@ metadata:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
-  source:
-    repoURL: https://github.com/rancher/local-path-provisioner.git
-    targetRevision: v0.0.24
-    path: deploy/chart/local-path-provisioner
-    helm:
-      values: |
-        storageClass:
-          name: local-path
-          defaultClass: true
+  sources:
+    - repoURL: https://github.com/rancher/local-path-provisioner.git
+      targetRevision: v0.0.24
+      path: deploy/chart/local-path-provisioner
+      helm:
+        valueFiles:
+          - $values/values/local-path-provisioner.yaml
+    - repoURL: https://github.com/sumit-ini8labs/Argocd-deployment.git
+      targetRevision: main
+      ref: values
   destination:
     server: https://kubernetes.default.svc
     namespace: local-path-storage
