@@ -8,8 +8,8 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: file:///root/infrastructure-apps
-    targetRevision: HEAD
+    repoURL: https://github.com/sumit-ini8labs/Argocd-deployment.git
+    targetRevision: main
     path: apps
     directory:
       recurse: true
