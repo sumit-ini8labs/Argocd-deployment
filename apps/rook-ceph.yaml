@@ -1,0 +1,83 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: rook-ceph-operator
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  project: default
+  source:
+    repoURL: https://charts.rook.io/release
+    chart: rook-ceph
+    targetRevision: v1.12.9
+    helm:
+      values: |
+        resources:
+          requests:
+            memory: 128Mi
+            cpu: 100m
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: rook-ceph
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: rook-ceph-cluster
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  project: default
+  source:
+    repoURL: https://charts.rook.io/release
+    chart: rook-ceph-cluster
+    targetRevision: v1.12.9
+    helm:
+      values: |
+        operatorNamespace: rook-ceph
+        cephClusterSpec:
+          mon:
+            count: 1
+          mgr:
+            count: 1
+          storage:
+            useAllNodes: true
+            useAllDevices: false
+            deviceFilter: ""
+            config:
+              osdsPerDevice: "1"
+        cephBlockPools:
+          - name: ceph-blockpool
+            spec:
+              failureDomain: host
+              replicated:
+                size: 1
+            storageClass:
+              enabled: true
+              name: rook-ceph-block
+              isDefault: true
+              reclaimPolicy: Delete
+              allowVolumeExpansion: true
+        cephFileSystems: []
+        cephObjectStores: []
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: rook-ceph
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
