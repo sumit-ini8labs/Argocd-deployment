@@ -110,3 +110,11 @@ kubectl get applications -n argocd
 - **ArgoCD**: Fully functional.
 - **Storage**: Added `local-path-provisioner` as a fallback for Rook-Ceph.
 - **GitOps**: All components are synced using vendored `values/` in Git.
+
+## 8. Key ArgoCD Features Used
+*   **Git as Source of Truth**: Every configuration is defined in Git, ensuring disaster recovery readiness.
+*   **Self-Healing**: ArgoCD automatically reverts manual cluster changes to match the Git state.
+*   **Multiple Sources**: Combines official Helm charts with private Git-based configuration values.
+*   **App of Apps**: A single parent application manages the entire infrastructure lifecycle.
+*   **Visual Health Monitoring**: Real-time insights into resource status via the ArgoCD Web UI.
+*   **Sync Waves**: Orchestrates deployment order (e.g., ensuring Storage is ready before Apps).
