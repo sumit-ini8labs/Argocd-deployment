@@ -1,6 +1,6 @@
 # ArgoCD & Infrastructure Deployment Guide
 
-This document summarizes the installation of ArgoCD and the deployment of infrastructure components (MinIO, Redis, Rook-Ceph) using GitOps.
+This document summarizes the installation of ArgoCD and the deployment of infrastructure components (MinIO, Redis, Rook-Ceph, Local Path Provisioner) using GitOps.
 
 ## 1. ArgoCD Installation & Configuration
 ArgoCD was installed on the Kubernetes cluster and exposed via NodePort.
@@ -35,47 +35,78 @@ kubectl create secret generic github-repo-creds \
 kubectl label secret github-repo-creds -n argocd argocd.argoproj.io/secret-type=repository
 ```
 
-## 3. Manifest Preparation
-A local Git repository was created at `/root/infrastructure-apps` with the following structure:
-- `apps/minio.yaml`: MinIO Object Storage (Helm-based)
-- `apps/redis.yaml`: Redis Cache (Helm-based)
-- `apps/rook-ceph.yaml`: Rook-Ceph Storage Cluster
-- `app-of-apps.yaml`: Parent application managing all child apps.
+## 3. GitOps Repository Structure
+The repository at `https://github.com/sumit-ini8labs/Argocd-deployment` is structured to manage applications and their configurations separately.
 
-## 4. Git Command History
-These are the commands used to synchronize the local manifests with the GitHub repository:
+```text
+.
+├── app-of-apps.yaml      # Parent application
+├── apps/                 # Application manifests
+│   ├── minio.yaml
+│   ├── redis.yaml
+│   ├── rook-ceph.yaml
+│   └── local-path-provisioner.yaml
+└── values/               # Vendored Helm values
+    ├── minio.yaml
+    ├── redis.yaml
+    ├── rook-ceph-operator.yaml
+    ├── rook-ceph-cluster.yaml
+    └── local-path-provisioner.yaml
+```
+
+## 4. Advanced Configuration: Vendoring & Multiple Sources
+To have full control over the configuration and maintain GitOps best practices, we use **Multiple Sources**.
+
+### Vendoring Values
+The full default `values.yaml` were fetched from Helm repos:
+```bash
+helm repo add minio https://charts.min.io/
+helm show values minio/minio --version 5.0.14 > values/minio.yaml
+```
+
+### Multiple Sources in Application
+Applications reference both the remote chart and the local values file:
+```yaml
+spec:
+  sources:
+    - repoURL: https://charts.min.io/
+      chart: minio
+      targetRevision: 5.0.14
+      helm:
+        valueFiles:
+          - $values/values/minio.yaml
+    - repoURL: https://github.com/sumit-ini8labs/Argocd-deployment.git
+      targetRevision: main
+      ref: values
+```
+
+## 5. Git Command History
+Commands used to synchronize the local manifests with the GitHub repository:
 
 ```bash
-# Identity Setup
+# Identity & Credential Helper
 git config --global user.name "sumit-ini8labs"
 git config --global user.email "sumit@ini8labs.tech"
 git config --global credential.helper store
 
-# Local Repo Initialization
-git init
+# Sync Process
 git add .
-git commit -m "Initialize infrastructure manifests"
-
-# Synchronization with GitHub
-git remote add origin https://github.com/sumit-ini8labs/Argocd-deployment.git
-git pull origin main --rebase
-git push -u origin main
+git commit -m "Vendor full values and update to Multiple Sources"
+git push origin main
 ```
 
-## 5. Deployment via ArgoCD
-The "App of Apps" pattern was used to deploy all components at once.
+## 6. Deployment via ArgoCD
+The "App of Apps" pattern manages all components.
 
 ```bash
-# Apply the Parent Application
+# Apply Parent App
 kubectl apply -f app-of-apps.yaml -n argocd
 
-# Monitor Applications
+# Check Status
 kubectl get applications -n argocd
 ```
 
-
-## 5. Current Status & Observations
+## 7. Current Status & Observations
 - **ArgoCD**: Fully functional.
-- **MinIO/Redis**: Deployed but `Pending` status. They require a functional StorageClass.
-- **Rook-Ceph**: Deployed but encountering kernel module issues (`rbd: Key was rejected by service`).
-- **Next Steps**: Consider using a `local-path-provisioner` for storage if Rook-Ceph is not compatible with the current node's kernel.
+- **Storage**: Added `local-path-provisioner` as a fallback for Rook-Ceph.
+- **GitOps**: All components are synced using vendored `values/` in Git.
