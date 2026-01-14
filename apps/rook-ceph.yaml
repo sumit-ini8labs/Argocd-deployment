@@ -1,52 +1,38 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: rook-ceph-operator
+  name: rook-ceph
   namespace: argocd
   finalizers:
     - resources-finalizer.argocd.argoproj.io
   annotations:
-    argocd.argoproj.io/sync-wave: "1"
+    argocd.argoproj.io/sync-options: CreateNamespace=true
+    # Add sync waves annotations for proper deployment order
+    argocd.argoproj.io/sync-wave: "0"
 spec:
   project: default
   sources:
+    # Rook-Ceph Operator (deploys first - wave 1)
     - repoURL: https://github.com/sumit-ini8labs/Argocd-deployment.git
       targetRevision: main
       path: infrastructure-apps/charts/rook-ceph
       helm:
         valueFiles:
           - values.yaml
-    - repoURL: https://github.com/sumit-ini8labs/Argocd-deployment.git
-      targetRevision: main
-      ref: values
-  destination:
-    server: https://kubernetes.default.svc
-    namespace: rook-ceph
-  syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
-    syncOptions:
-      - CreateNamespace=true
----
-apiVersion: argoproj.io/v1alpha1
-kind: Application
-metadata:
-  name: rook-ceph-cluster
-  namespace: argocd
-  finalizers:
-    - resources-finalizer.argocd.argoproj.io
-  annotations:
-    argocd.argoproj.io/sync-wave: "2"
-spec:
-  project: default
-  sources:
+        # Operator should deploy first
+        annotations:
+          argocd.argoproj.io/sync-wave: "1"
+    # Rook-Ceph Cluster (deploys after operator - wave 2)
     - repoURL: https://github.com/sumit-ini8labs/Argocd-deployment.git
       targetRevision: main
       path: infrastructure-apps/charts/rook-ceph-cluster
       helm:
         valueFiles:
           - values.yaml
+        # Cluster should deploy after operator
+        annotations:
+          argocd.argoproj.io/sync-wave: "2"
+    # Values reference
     - repoURL: https://github.com/sumit-ini8labs/Argocd-deployment.git
       targetRevision: main
       ref: values
@@ -59,3 +45,10 @@ spec:
       selfHeal: true
     syncOptions:
       - CreateNamespace=true
+      - RespectIgnoreDifferences=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
