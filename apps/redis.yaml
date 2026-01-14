@@ -8,12 +8,12 @@ metadata:
 spec:
   project: default
   sources:
-    - repoURL: https://charts.bitnami.com/bitnami
-      chart: redis
-      targetRevision: 18.0.0
+    - repoURL: https://github.com/sumit-ini8labs/Argocd-deployment.git
+      targetRevision: main
+      path: infrastructure-apps/charts/redis
       helm:
         valueFiles:
-          - $values/values/redis/values.yaml
+          - values.yaml
     - repoURL: https://github.com/sumit-ini8labs/Argocd-deployment.git
       targetRevision: main
       ref: values

@@ -10,12 +10,12 @@ metadata:
 spec:
   project: default
   sources:
-    - repoURL: https://charts.rook.io/release
-      chart: rook-ceph
-      targetRevision: v1.12.9
+    - repoURL: https://github.com/sumit-ini8labs/Argocd-deployment.git
+      targetRevision: main
+      path: infrastructure-apps/charts/rook-ceph
       helm:
         valueFiles:
-          - $values/values/rook-ceph/operator-values.yaml
+          - values.yaml
     - repoURL: https://github.com/sumit-ini8labs/Argocd-deployment.git
       targetRevision: main
       ref: values
@@ -41,12 +41,12 @@ metadata:
 spec:
   project: default
   sources:
-    - repoURL: https://charts.rook.io/release
-      chart: rook-ceph-cluster
-      targetRevision: v1.12.9
+    - repoURL: https://github.com/sumit-ini8labs/Argocd-deployment.git
+      targetRevision: main
+      path: infrastructure-apps/charts/rook-ceph-cluster
       helm:
         valueFiles:
-          - $values/values/rook-ceph/cluster-values.yaml
+          - values.yaml
     - repoURL: https://github.com/sumit-ini8labs/Argocd-deployment.git
       targetRevision: main
       ref: values

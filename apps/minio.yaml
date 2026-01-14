@@ -8,12 +8,12 @@ metadata:
 spec:
   project: default
   sources:
-    - repoURL: https://charts.min.io/
-      chart: minio
-      targetRevision: 5.0.14
+    - repoURL: https://github.com/sumit-ini8labs/Argocd-deployment.git
+      targetRevision: main
+      path: infrastructure-apps/charts/minio
       helm:
         valueFiles:
-          - $values/values/minio/values.yaml
+          - values.yaml
     - repoURL: https://github.com/sumit-ini8labs/Argocd-deployment.git
       targetRevision: main
       ref: values
