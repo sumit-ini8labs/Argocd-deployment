@@ -45,44 +45,74 @@ The repository at `https://github.com/sumit-ini8labs/Argocd-deployment` is struc
 │   ├── minio.yaml
 │   ├── redis.yaml
 │   ├── rook-ceph.yaml
-│   └── local-path-provisioner.yaml
-└── values/               # Vendored Helm values (Organized by app)
+│   ├── prometheus.yaml
+│   ├── grafana.yaml
+│   ├── victoria-metrics-cluster.yaml
+│   └── victoria-logs-cluster.yaml
+└── charts/               # Vendored Helm charts with embedded values
     ├── minio/
     │   └── values.yaml
     ├── redis/
     │   └── values.yaml
     ├── rook-ceph/
-    │   ├── operator-values.yaml
-    │   └── cluster-values.yaml
-    └── local-path-provisioner/
+    │   └── values.yaml
+    ├── rook-ceph-cluster/
+    │   └── values.yaml
+    ├── prometheus/
+    │   └── values.yaml
+    ├── grafana/
+    │   └── values.yaml
+    ├── victoria-metrics-cluster/
+    │   └── values.yaml
+    └── victoria-logs-cluster/
         └── values.yaml
 ```
 
-## 4. Advanced Configuration: Vendoring & Multiple Sources
-To have full control over the configuration and maintain GitOps best practices, we use **Multiple Sources**.
+## 4. Advanced Configuration: Chart Vendoring & Simplified Values
+To have full control over the configuration and maintain GitOps best practices, we use **vendored charts with embedded values**.
 
-### Vendoring Values
-The full default `values.yaml` were fetched from Helm repos:
+### Chart Vendoring Process
+The complete Helm charts are downloaded and stored in the repository with their default `values.yaml`:
+
 ```bash
+# Add official repositories
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+helm repo add grafana https://grafana.github.io/helm-charts
+helm repo add redis https://helm.redis.io/
 helm repo add minio https://charts.min.io/
-helm show values minio/minio --version 5.0.14 > values/minio.yaml
+helm repo add vm https://victoriametrics.github.io/helm-charts/
+
+# Download and extract charts with values
+helm pull prometheus-community/kube-prometheus-stack --destination charts/prometheus --untar
+helm pull grafana/grafana --destination charts/grafana --untar
+helm pull redis/redis-enterprise-operator --version 7.22.0-16 --destination charts/redis --untar
+helm pull minio/minio --destination charts/minio --untar
+helm pull vm/victoria-metrics-cluster --destination charts/victoria-metrics-cluster --untar
+helm pull vm/victoria-logs-cluster --destination charts/victoria-logs-cluster --untar
 ```
 
-### Multiple Sources in Application
-Applications reference both the remote chart and the local values file:
+### Simplified Application Configuration
+Applications now reference the vendored charts directly with embedded values:
+
 ```yaml
 spec:
   sources:
-    - repoURL: https://charts.min.io/
-      chart: minio
-      targetRevision: 5.0.14
+    - repoURL: https://github.com/sumit-ini8labs/Argocd-deployment.git
+      targetRevision: main
+      path: infrastructure-apps/charts/prometheus
       helm:
         valueFiles:
-          - $values/values/minio.yaml
+          - values.yaml
     - repoURL: https://github.com/sumit-ini8labs/Argocd-deployment.git
       targetRevision: main
       ref: values
 ```
+
+### Benefits of This Approach
+- **Single Source of Truth**: Charts and values are versioned together
+- **Simplified Structure**: No separate values directory needed
+- **Offline Capability**: Charts are available in the repository
+- **Easy Customization**: Values can be modified directly in chart directories
 
 ## 5. Git Command History
 Commands used to synchronize the local manifests with the GitHub repository:
@@ -112,10 +142,155 @@ kubectl get applications -n argocd
 
 ## 7. Current Status & Observations
 - **ArgoCD**: Fully functional.
-- **Storage**: Added `local-path-provisioner` as a fallback for Rook-Ceph.
-- **GitOps**: All components are synced using vendored `values/` in Git.
+- **Storage**: Rook-Ceph deployed with distributed storage.
+- **Monitoring Stack**: Complete monitoring setup with Prometheus, Grafana, VictoriaMetrics, and VictoriaLogs.
+- **Data Services**: Redis Enterprise and MinIO for object storage.
+- **GitOps**: All components use vendored charts with embedded values for simplified management.
 
-## 8. Key ArgoCD Features Used
+## 8. Git Troubleshooting & Commands Used
+
+This section documents all git commands used during the monitoring stack setup and troubleshooting process.
+
+### 8.1 Initial Setup Commands
+
+```bash
+# Navigate to infrastructure-apps directory
+cd /root/infrastructure-apps
+
+# Check git status
+git status
+
+# Add all changes
+git add .
+
+# Commit changes with descriptive message
+git commit -m "Add monitoring stack and update charts to use official repositories
+
+- Add Prometheus, Grafana, VictoriaMetrics cluster, and VictoriaLogs cluster charts
+- Update Redis to use official helm.redis.io repository with redis-enterprise-operator
+- Update Minio to use official charts.min.io repository
+- Remove values folders and update all ArgoCD apps to use chart-internal values.yaml
+- Clean up local-path-provisioner application"
+```
+
+### 8.2 Push Troubleshooting Commands
+
+```bash
+# Initial push attempt (rejected due to remote changes)
+git push origin main
+
+# Pull remote changes (encountered divergent branches)
+git pull origin main
+
+# Configure pull strategy (rebase)
+git pull origin main --rebase
+
+# Check status for merge conflicts
+git status
+
+# Resolve merge conflicts by adding our files
+git add apps/grafana.yaml apps/prometheus.yaml apps/victoria-logs-cluster.yaml apps/victoria-metrics-cluster.yaml
+
+# Commit the merge resolution
+git commit -m "Add monitoring stack and update charts to use official repositories..."
+
+# Second push attempt (still rejected - non-fast-forward)
+git push origin main
+
+# Pull again to ensure up to date
+git pull origin main
+
+# Check commit history to understand the situation
+git log --oneline -5
+
+# Force push with lease (safe force push)
+git push --force-with-lease origin main
+```
+
+### 8.3 Repository Management Commands
+
+```bash
+# Add helm repositories
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+helm repo add grafana https://grafana.github.io/helm-charts
+helm repo add redis https://helm.redis.io/
+helm repo add minio https://charts.min.io/
+helm repo add vm https://victoriametrics.github.io/helm-charts/
+
+# Update all repositories
+helm repo update
+
+# Download and extract charts
+helm pull prometheus-community/kube-prometheus-stack --destination charts/prometheus --untar
+helm pull grafana/grafana --destination charts/grafana --untar
+helm pull redis/redis-enterprise-operator --version 7.22.0-16 --destination charts/redis --untar
+helm pull minio/minio --destination charts/minio --untar
+helm pull vm/victoria-metrics-cluster --destination charts/victoria-metrics-cluster --untar
+helm pull vm/victoria-logs-cluster --destination charts/victoria-logs-cluster --untar
+
+# Generate values files
+helm show values prometheus-community/kube-prometheus-stack > values/prometheus/values.yaml
+helm show values grafana/grafana > values/grafana/values.yaml
+helm show values vm/victoria-metrics-cluster > values/victoria-metrics-cluster/values.yaml
+helm show values vm/victoria-logs-cluster > values/victoria-logs-cluster/values.yaml
+```
+
+### 8.4 Directory Structure Commands
+
+```bash
+# Create directory structure
+mkdir -p charts/prometheus charts/grafana charts/redis charts/minio
+mkdir -p charts/victoria-metrics-cluster charts/victoria-logs-cluster
+mkdir -p values/prometheus values/grafana values/redis values/minio
+mkdir -p values/victoria-metrics-cluster values/victoria-logs-cluster
+
+# Remove old values folder structure
+rm -rf values/
+
+# Remove old charts
+rm -rf charts/redis charts/minio
+```
+
+### 8.5 Git Workflow Best Practices Used
+
+1. **Always check status before operations**: `git status`
+2. **Use descriptive commit messages**: Include what changed and why
+3. **Handle merge conflicts carefully**: Add specific files that had conflicts
+4. **Use safe force push**: `--force-with-lease` instead of `--force`
+5. **Verify commit history**: `git log --oneline` to understand the state
+6. **Pull before pushing**: Always integrate remote changes first
+
+### 8.6 Common Issues & Solutions
+
+**Issue**: Push rejected due to non-fast-forward
+```bash
+# Solution: Pull remote changes first
+git pull origin main
+# Then push
+git push origin main
+```
+
+**Issue**: Divergent branches error
+```bash
+# Solution: Use rebase to maintain linear history
+git pull origin main --rebase
+```
+
+**Issue**: Merge conflicts
+```bash
+# Solution: Check status, add conflicted files, commit
+git status
+git add <conflicted-files>
+git commit -m "Resolve merge conflicts"
+```
+
+**Issue**: Still rejected after merge
+```bash
+# Solution: Force push with lease (safer than regular force)
+git push --force-with-lease origin main
+```
+
+## 9. Key ArgoCD Features Used
 *   **Git as Source of Truth**: Every configuration is defined in Git, ensuring disaster recovery readiness.
 *   **Self-Healing**: ArgoCD automatically reverts manual cluster changes to match the Git state.
 *   **Multiple Sources**: Combines official Helm charts with private Git-based configuration values.
